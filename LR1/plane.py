@@ -74,9 +74,6 @@ contour_image = np.ones((image.shape[0], image.shape[1], 3), dtype=np.uint8) * 2
 for contour in contours:
     cv.drawContours(contour_image, [contour], -1, (0, 0, 0), 2)
 
-# Перетворюємо зображення для Matplotlib (BGR -> RGB)
-contour_image_rgb = cv.cvtColor(contour_image, cv.COLOR_BGR2RGB)
-
 # Відображаємо зображення з контурами
 plt.figure("Знайдені контури")
 plt.imshow(contour_image)
