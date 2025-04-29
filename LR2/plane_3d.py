@@ -2,8 +2,75 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
 
-Y_FROM, Y_TO, Y_POINTS = 0, 0.5, 50
-X_FROM, X_TO, X_POINTS = 0, 2 * np.pi, 50
+Y_FROM, Y_TO, Y_POINTS = 0, 0.5, 100
+X_FROM, X_TO, X_POINTS = 0, 2 * np.pi, 100
+
+BEZIER_WEIGHTS = [1, 1, 1, 1]
+BEZIER_STEP = 3  # overlap for smoothness
+
+# Базисные полиномы Бернштейна
+def bernstein_poly(i, t):
+    if i == 0:
+        return (1 - t)**3
+    elif i == 1:
+        return 3 * t * (1 - t)**2
+    elif i == 2:
+        return 3 * t**2 * (1 - t)
+    elif i == 3:
+        return t**3
+    return None
+
+# Функция для построения рациональной кривой Безье
+def rational_bezier_3d(P, w, num_points=100):
+    t_vals = np.linspace(0, 1, num_points)
+    curve = []
+    for t in t_vals:
+        numerator = np.zeros(3)
+        denominator = 0
+        for i in range(4):
+            b = bernstein_poly(i, t)
+            numerator += w[i] * P[i] * b
+            denominator += w[i] * b
+        curve.append(numerator / denominator)
+    return curve
+
+def build_bezier_curve(contour):
+    contour_closed = np.vstack((contour, contour[:3]))
+
+    full_curve = []
+
+    # Проходимо по точках контуру та будуємо прямі
+    for i in range(0, len(contour_closed) - 3, BEZIER_STEP):
+        P = contour_closed[i:i+4]
+        if len(P) < 4:
+            continue
+        bezier_curve = rational_bezier_3d(P, BEZIER_WEIGHTS, 100)
+        full_curve.extend(bezier_curve)
+
+    return np.array(full_curve)
+
+
+def map_to_surface(point_2d):
+    u = point_2d[0]
+    v = point_2d[1]
+    R = 1 + abs(np.sin(2 * np.pi * v))
+    x = R * np.cos(u)
+    y = R * np.sin(u)
+    z = v
+    return np.array([x, y, z])
+
+def normalize_2d_to_range(points, x_range, y_range):
+    min_vals = np.min(points, axis=0)
+    max_vals = np.max(points, axis=0)
+
+    # Normalize to [0, 1]
+    normalized = (points - min_vals) / (max_vals - min_vals)
+
+    # Scale to target ranges
+    x_scaled = normalized[:, 0] * (x_range[1] - x_range[0]) + x_range[0]
+    y_scaled = normalized[:, 1] * (y_range[1] - y_range[0]) + y_range[0]
+
+    return np.stack((x_scaled, y_scaled), axis=1)
 
 # Функція для побудови поверхні горщика
 def create_pot_surface(u_vals, v_vals):
@@ -44,15 +111,23 @@ epsilon = 0.0005 * cv.arcLength(contour, True)
 contour = cv.approxPolyDP(contour, epsilon, True)
 contour = contour.squeeze()
 print(f"Контур має {len(contour)} точок")
+contour_normalized = normalize_2d_to_range(contour, (X_FROM, X_TO), (Y_FROM, Y_TO))
 
 plt.plot(contour[:, 0], contour[:, 1], 'r.', label='Точки')
 plt.legend()
 
-# Створюємо сітку параметрів u та v
+# Преобразование 2D-контуров в 3D
+contour_3d = [map_to_surface(point) for point in contour_normalized]
+contour_3d = np.array(contour_3d)
+
+# Построение кривой Безье на 3D-поверхности
+# bezier_curve_3d = rational_bezier_3d(contour_3d, BEZIER_WEIGHTS)
+bezier_curve_3d = build_bezier_curve(contour_3d)
+
+# Створюємо поверхню горщика
 u_vals = np.linspace(X_FROM, X_TO, X_POINTS)
 v_vals = np.linspace(Y_FROM, Y_TO, Y_POINTS)
 
-# Створюємо поверхню горщика
 X, Y, Z = create_pot_surface(u_vals, v_vals)
 
 # Створюємо 3D графік
@@ -60,17 +135,10 @@ fig = plt.figure(figsize=(10, 8))
 ax = fig.add_subplot(111, projection='3d')
 
 # Побудова поверхні
-ax.plot_surface(X, Y, Z, color='yellow', edgecolor='k', alpha=1, shade=False)
+ax.plot_surface(X, Y, Z, color='lightblue', alpha=0.6, edgecolor=None, shade=False)
 
-# # Наносимо літак на поверхню горщика
-# # Розміщуємо літак на верхній частині поверхні
-for point in contour:
-    # Перетворюємо кожну точку літака на поверхню
-    # Вибираємо v = 2 для верхнього краю горщика
-    R = 1 + abs(np.sin(2 * np.pi * Y_TO))
-    u = point[0] / image.shape[1] * 2 * np.pi  # Перетворюємо x-координату зображення в кут u
-    X_l, Y_l, Z_l = R * np.cos(u), R * np.sin(u), Y_TO
-    ax.scatter(X_l, Y_l, Z_l, color='r', s=10)  # Наносимо точки літака на поверхню
+# Кривая Безье
+ax.plot(bezier_curve_3d[:, 0], bezier_curve_3d[:, 1], bezier_curve_3d[:, 2], 'r-', label='Кривая Безье')
 
 # Налаштування графіка
 ax.set_title("Горщик з нанесеним малюнком літака")

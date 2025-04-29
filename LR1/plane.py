@@ -14,6 +14,8 @@ def bernstein_poly(i, t):
         return 3 * t**2 * (1 - t)
     elif i == 3:
         return t**3
+    return None
+
 
 def rational_bezier(P, w, num_points=100):
     t_vals = np.linspace(0, 1, num_points)
@@ -52,7 +54,7 @@ def print_contour(contour, title):
     plt.legend()
 
 # Завантажуємо зображення
-image = cv.imread('plane.png', cv.IMREAD_GRAYSCALE)
+image = cv.imread('../plane.png', cv.IMREAD_GRAYSCALE)
 plt.figure("Вхідний малюнок")
 plt.axis('off')
 plt.title("Вхідний малюнок")
