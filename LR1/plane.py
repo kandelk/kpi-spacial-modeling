@@ -2,6 +2,8 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
 
+from utils import *
+
 BEZIER_WEIGHTS = [1, 1, 1, 1]
 BEZIER_STEP = 3  # overlap for smoothness
 
@@ -34,7 +36,8 @@ def print_contour(contour, title):
     plt.figure(title)
     plt.axis('equal')
     plt.title(title + " Кубічна крива Безьє")
-    plt.axis('off')
+    # plt.axis('off')
+    plt.grid(True)
     plt.plot(contour[:, 0], contour[:, 1], 'r.', label='Точки')
 
     contour_closed = np.vstack((contour, contour[:3]))
@@ -56,7 +59,8 @@ def print_contour(contour, title):
 # Завантажуємо зображення
 image = cv.imread('../plane.png', cv.IMREAD_GRAYSCALE)
 plt.figure("Вхідний малюнок")
-plt.axis('off')
+# plt.axis('off')
+plt.grid(True)
 plt.title("Вхідний малюнок")
 plt.imshow(image, cmap='gray')
 
@@ -79,7 +83,8 @@ for contour in contours:
 # Відображаємо зображення з контурами
 plt.figure("Знайдені контури")
 plt.imshow(contour_image)
-plt.axis('off')
+# plt.axis('off')
+plt.grid(True)
 plt.title("Знайдені контури")
 
 # Обираємо контур для роботи
