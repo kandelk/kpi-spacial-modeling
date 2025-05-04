@@ -1,3 +1,4 @@
+import math
 import turtle
 
 # L-system settings
@@ -19,8 +20,6 @@ def apply_rules(axiom, rules, iterations):
         result = new_result
     return result
 
-import turtle
-import math
 
 def simulate_path(instructions, angle=60, step=5):
     x, y = 0, 0
