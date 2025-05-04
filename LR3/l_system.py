@@ -19,35 +19,48 @@ def apply_rules(axiom, rules, iterations):
         result = new_result
     return result
 
-def draw_lsystem(instructions, angle, step=5):
+import turtle
+import math
+
+def simulate_path(instructions, angle=60, step=5):
+    x, y = 0, 0
+    heading = 0
+    positions = [(x, y)]
+
+    for cmd in instructions:
+        if cmd in "FG":
+            rad = math.radians(heading)
+            x += step * math.cos(rad)
+            y += step * math.sin(rad)
+            positions.append((x, y))
+        elif cmd == "+":
+            heading += angle
+        elif cmd == "-":
+            heading -= angle
+        elif cmd == "|":
+            heading += 180
+
+    return positions
+
+def get_bounds(positions):
+    xs, ys = zip(*positions)
+    return min(xs), max(xs), min(ys), max(ys)
+
+def draw_lsystem_centered(instructions, angle=60, step=5):
+    positions = simulate_path(instructions, angle, step)
+    min_x, max_x, min_y, max_y = get_bounds(positions)
+
+    offset_x = -(min_x + max_x) / 2
+    offset_y = -(min_y + max_y) / 2
+
     turtle.speed(0)
     turtle.hideturtle()
+    turtle.tracer(0, 0)
     turtle.penup()
-    turtle.goto(-200, -200)
+    turtle.goto(offset_x, offset_y)
     turtle.setheading(0)
     turtle.pendown()
 
-    stack = []
-
-    for cmd in instructions:
-        if cmd in "FG":
-            turtle.forward(step)
-        elif cmd == "+":
-            turtle.left(angle)
-        elif cmd == "-":
-            turtle.right(angle)
-        elif cmd == "|":
-            # optional: reflect direction
-            turtle.setheading((turtle.heading() + 180) % 360)
-        # You can add '[' and ']' for pushing/popping stack if needed
-
-    turtle.done()
-
-def draw_lsystem_fast(instructions, angle=60, step=5):
-    turtle.speed(0)
-    turtle.goto(0, 0)
-    turtle.hideturtle()
-    turtle.tracer(0, 0)  # Disable animation
     for cmd in instructions:
         if cmd in "FG":
             turtle.forward(step)
@@ -57,9 +70,11 @@ def draw_lsystem_fast(instructions, angle=60, step=5):
             turtle.right(angle)
         elif cmd == "|":
             turtle.setheading((turtle.heading() + 180) % 360)
-    turtle.update()  # Render all at once
+
+    turtle.update()
     turtle.done()
+
 
 # Build and draw
-instructions = apply_rules(axiom, rules, iterations=5)  # try 3 or 4 first
-draw_lsystem_fast(instructions, angle)
+instructions = apply_rules(axiom, rules, iterations=6)  # try 3 or 4 first
+draw_lsystem_centered(instructions, angle)
